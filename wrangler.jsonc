@@ -12,5 +12,11 @@
       "database_name": "openapi-db",
       "database_id": "33ad5184-5984-464a-a30d-4d42dfeb1428"
     }
-  ]
+    ],
+  "vars": {
+    "GITHUB_OWNER":       "pacuitinfo",
+    "GITHUB_REPO":        "pacuit",
+    "GITHUB_UPLOAD_PATH": "public/membership-docs",
+    "GITHUB_TOKEN": "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"
+  }
 }
