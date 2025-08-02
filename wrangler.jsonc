@@ -1,16 +1,17 @@
 {
   "compatibility_date": "2025-04-01",
-  "main": "src/index.ts",
   "name": "chanfana-openapi",
+  "main": "src/index.ts",
   "upload_source_maps": true,
   "observability": {
     "enabled": true
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "openapi-db",
-      "database_id": "33ad5184-5984-464a-a30d-4d42dfeb1428"
-    }
-  ]
+  "vars": {
+    "GITHUB_OWNER": "edward1986",
+    "GITHUB_REPO": "CHARAFANA_GITHUB_DATABASE"
+  },
+  "secrets": [
+    "GITHUB_TOKEN"
+  ],
+  "node_compat": true
 }

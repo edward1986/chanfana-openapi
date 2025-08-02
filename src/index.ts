@@ -1,8 +1,12 @@
 import { ApiException, fromHono } from "chanfana";
 import { Hono } from "hono";
-import { tasksRouter } from "./endpoints/tasks/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { DummyEndpoint } from "./endpoints/dummyEndpoint";
+import { TaskList } from "./endpoints/tasks/taskList";
+import { TaskCreate } from "./endpoints/tasks/taskCreate";
+import { TaskRead } from "./endpoints/tasks/taskRead";
+import { TaskUpdate } from "./endpoints/tasks/taskUpdate";
+import { TaskDelete } from "./endpoints/tasks/taskDelete";
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
@@ -40,8 +44,12 @@ const openapi = fromHono(app, {
   },
 });
 
-// Register Tasks Sub router
-openapi.route("/tasks", tasksRouter);
+// Register Task endpoints
+openapi.add(TaskList);
+openapi.add(TaskCreate);
+openapi.add(TaskRead);
+openapi.add(TaskUpdate);
+openapi.add(TaskDelete);
 
 // Register other endpoints
 openapi.post("/dummy/:slug", DummyEndpoint);
