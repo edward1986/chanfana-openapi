@@ -4,9 +4,20 @@ import { tasksRouter } from "./endpoints/tasks/router";
 import { submissionsRouter } from "./endpoints/submissions/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { DummyEndpoint } from "./endpoints/dummyEndpoint";
+import { cors } from "hono/cors";
 
 // Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
+
+// Setup CORS middleware
+app.use(
+  "*",
+  cors({
+    origin: "*",
+    allowHeaders: ["*"],
+    allowMethods: ["*"],
+  }),
+);
 
 app.onError((err, c) => {
   if (err instanceof ApiException) {
