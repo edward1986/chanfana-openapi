@@ -16,8 +16,8 @@ export async function uploadToGitHub(
     if (!GITHUB_TOKEN || !GITHUB_OWNER || !GITHUB_REPO || !GITHUB_UPLOAD_PATH) {
         throw new Error("Missing GitHub configuration in environment variables.");
     }
-
-    const path = `${GITHUB_UPLOAD_PATH}/${registrationId}/${fileName}`;
+    const timestamp = Date.now();
+    const path = `${GITHUB_UPLOAD_PATH}/${registrationId}/${timestamp}-${fileName}`;
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}`;
 
     const response = await fetch(url, {

@@ -15,7 +15,6 @@
     ],
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-
     "GITHUB_OWNER":       "pacuitinfo",
     "GITHUB_REPO":        "pacuit",
     "GITHUB_UPLOAD_PATH": "public/membership-docs",
