@@ -48,23 +48,19 @@ export class SubmissionCreate extends OpenAPIRoute {
 
     // Save to Firestore
     await addDocument("submissions", {
-      registration_id: registrationId,
-      full_name: body.fullName,
+      registrationId,
+      fullName: body.fullName,
       email: body.email,
-      contact_number: body.contactNumber,
+      contactNumber: body.contactNumber,
       institution: body.institution,
-      research_title: body.researchTitle,
+      researchTitle: body.researchTitle,
       bionote: body.bionote,
-      co_authors: body.coAuthors || "N/A",
+      coAuthors: body.coAuthors || 'N/A',
       keywords: body.keywords,
-      status: "Pending Review",
-      submitted_at: new Date().toISOString(),
-      abstract_name: body.abstractFileName,
-      abstract_html_url: abstractUpload.html_url,
-      abstract_download_url: abstractUpload.download_url,
-      proof_of_payment_name: body.proofOfPaymentFileName,
-      proof_of_payment_html_url: paymentUpload.html_url,
-      proof_of_payment_download_url: paymentUpload.download_url,
+      status: 'Pending Review',
+      submittedAt:  new Date().toISOString(),
+      abstract: { name: body.abstractFileName, ...abstractUpload },
+      proofOfPayment: { name: body.proofOfPaymentFileName, ...paymentUpload },
     }, c.env);
 
     return {
