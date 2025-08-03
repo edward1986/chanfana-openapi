@@ -1,16 +1,9 @@
-import { D1UpdateEndpoint } from "chanfana";
+import { FirestoreUpdateEndpoint } from "../../lib/firestore-endpoints";
 import { HandleArgs } from "../../types";
 import { TaskModel } from "./base";
 
-export class TaskUpdate extends D1UpdateEndpoint<HandleArgs> {
+export class TaskUpdate extends FirestoreUpdateEndpoint<HandleArgs> {
   _meta = {
     model: TaskModel,
-    fields: TaskModel.schema.pick({
-      name: true,
-      slug: true,
-      description: true,
-      completed: true,
-      due_date: true,
-    }),
   };
 }

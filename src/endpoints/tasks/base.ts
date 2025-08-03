@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const task = z.object({
-  id: z.number().int(),
+  id: z.string(),
   name: z.string(),
   slug: z.string(),
   description: z.string(),
@@ -10,14 +10,6 @@ export const task = z.object({
 });
 
 export const TaskModel = {
-  tableName: "tasks",
-  primaryKeys: ["id"],
+  collectionName: "tasks",
   schema: task,
-  serializer: (obj: Record<string, string | number | boolean>) => {
-    return {
-      ...obj,
-      completed: Boolean(obj.completed),
-    };
-  },
-  serializerObject: task,
 };

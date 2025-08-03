@@ -2,7 +2,7 @@ import { OpenAPIRoute, contentJson } from 'chanfana';
 import { z } from 'zod';
 import { AppContext } from '../../types';
 import { uploadToGitHub } from '../../lib/github-upload';
-import { addDocument } from '../../lib/firestore-rest';
+import { Firestore } from '../../lib/firestore';
 
 const RegisterParticipantInputSchema = z.object({
   fullName: z.string(),
@@ -47,7 +47,8 @@ export class SubmissionCreate extends OpenAPIRoute {
     const paymentUpload = await uploadToGitHub(body.proofOfPaymentDataUri.split("base64,")[1], body.proofOfPaymentFileName, registrationId, c.env);
 
     // Save to Firestore
-    await addDocument("submissions", {
+    const firestore = new Firestore(c.env);
+    await firestore.addDocument("submissions", {
       registrationId,
       fullName: body.fullName,
       email: body.email,

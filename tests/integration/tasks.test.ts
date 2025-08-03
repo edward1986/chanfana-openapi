@@ -10,7 +10,7 @@ async function createTask(taskData: any) {
   });
   const body = await response.json<{
     success: boolean;
-    result: { id: number };
+    result: { id: string };
   }>();
   return body.result.id;
 }
@@ -79,7 +79,7 @@ describe("Task API Integration Tests", () => {
       expect(body.success).toBe(true);
       expect(body.result).toEqual(
         expect.objectContaining({
-          id: expect.any(Number),
+          id: expect.any(String),
           ...taskData,
         }),
       );
@@ -129,7 +129,7 @@ describe("Task API Integration Tests", () => {
     });
 
     it("should return a 404 error if task is not found", async () => {
-      const nonExistentId = 9999;
+      const nonExistentId = "non-existent-id";
       const response = await SELF.fetch(
         `http://local.test/tasks/${nonExistentId}`,
       );
@@ -179,7 +179,7 @@ describe("Task API Integration Tests", () => {
     });
 
     it("should return 404 when trying to update a non-existent task", async () => {
-      const nonExistentId = 9999;
+      const nonExistentId = "non-existent-id";
       const updatedData = {
         name: "Updated Task",
         slug: "updated-task",
@@ -251,7 +251,7 @@ describe("Task API Integration Tests", () => {
     });
 
     it("should return 404 when trying to delete a non-existent task", async () => {
-      const nonExistentId = 9999;
+      const nonExistentId = "non-existent-id";
       const response = await SELF.fetch(
         `http://local.test/tasks/${nonExistentId}`,
         {
