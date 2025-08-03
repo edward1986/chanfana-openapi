@@ -53,7 +53,7 @@ const openapi = fromHono(app, {
 });
 
 // Register Tasks Sub router
-openapi.route("/tasks", tasksRouter);
+app.route("/tasks", tasksRouter);
 
 // Register Submissions Sub router
 openapi.route("/submissions", submissionsRouter);

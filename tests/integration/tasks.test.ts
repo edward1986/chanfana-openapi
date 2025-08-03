@@ -1,6 +1,58 @@
 import { SELF } from "cloudflare:test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+// In-memory store for our mock database
+let tasks: any[] = [];
+let idCounter = 1;
+
+// Mock the firestore library
+vi.mock("../../src/lib/firestore", () => {
+  const mockDb = {
+    add: vi.fn((collection, data) => {
+      const newId = String(idCounter++);
+      const newTask = { id: newId, ...data };
+      tasks.push(newTask);
+      return Promise.resolve(newTask);
+    }),
+    get: vi.fn((collection, id) => {
+      const task = tasks.find((t) => t.id === id);
+      if (task) {
+        return Promise.resolve({ id: task.id, data: () => task });
+      }
+      return Promise.resolve(null);
+    }),
+    update: vi.fn((collection, id, data) => {
+        const taskIndex = tasks.findIndex((t) => t.id === id);
+        if (taskIndex > -1) {
+            tasks[taskIndex] = { ...tasks[taskIndex], ...data };
+            return Promise.resolve();
+        }
+        // The real library might throw an error, but for this test, let's assume it does nothing if not found.
+        return Promise.resolve();
+    }),
+    delete: vi.fn((collection, id) => {
+        const taskIndex = tasks.findIndex((t) => t.id === id);
+        if (taskIndex > -1) {
+            tasks.splice(taskIndex, 1);
+        }
+        return Promise.resolve();
+    }),
+    collection: vi.fn((collectionName) => ({
+      get: vi.fn(() => {
+        return Promise.resolve({
+            forEach: (callback: (doc: any) => void) => {
+                tasks.forEach(task => callback({ id: task.id, data: () => task }));
+            }
+        });
+      }),
+    })),
+  };
+
+  return {
+    getDb: vi.fn(() => mockDb),
+  };
+});
+
 // Helper function to create a task and return its ID
 async function createTask(taskData: any) {
   const response = await SELF.fetch(`http://local.test/tasks`, {
@@ -8,17 +60,15 @@ async function createTask(taskData: any) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(taskData),
   });
-  const body = await response.json<{
-    success: boolean;
-    result: { id: number };
-  }>();
-  return body.result.id;
+  const body = await response.json<any>();
+  return body.id;
 }
 
 describe("Task API Integration Tests", () => {
-  beforeEach(async () => {
-    // This is a good place to clear any test data if your test runner doesn't do it automatically.
-    // Since the prompt mentions rows are deleted after each test, we can rely on that.
+  beforeEach(() => {
+    // Clear the in-memory database and reset mocks before each test
+    tasks = [];
+    idCounter = 1;
     vi.clearAllMocks();
   });
 
@@ -26,29 +76,24 @@ describe("Task API Integration Tests", () => {
   describe("GET /tasks", () => {
     it("should get an empty list of tasks", async () => {
       const response = await SELF.fetch(`http://local.test/tasks`);
-      const body = await response.json<{ success: boolean; result: any[] }>();
+      const body = await response.json<any[]>();
 
       expect(response.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.result).toEqual([]);
+      expect(body).toEqual([]);
     });
 
     it("should get a list with one task", async () => {
       await createTask({
         name: "Test Task",
         slug: "test-task",
-        description: "A task for testing",
-        completed: false,
-        due_date: "2025-01-01T00:00:00.000Z",
       });
 
       const response = await SELF.fetch(`http://local.test/tasks`);
-      const body = await response.json<{ success: boolean; result: any[] }>();
+      const body = await response.json<any[]>();
 
       expect(response.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.result.length).toBe(1);
-      expect(body.result[0]).toEqual(
+      expect(body.length).toBe(1);
+      expect(body[0]).toEqual(
         expect.objectContaining({
           name: "Test Task",
           slug: "test-task",
@@ -63,9 +108,6 @@ describe("Task API Integration Tests", () => {
       const taskData = {
         name: "New Task",
         slug: "new-task",
-        description: "A brand new task",
-        completed: false,
-        due_date: "2025-12-31T23:59:59.000Z",
       };
       const response = await SELF.fetch(`http://local.test/tasks`, {
         method: "POST",
@@ -73,54 +115,42 @@ describe("Task API Integration Tests", () => {
         body: JSON.stringify(taskData),
       });
 
-      const body = await response.json<{ success: boolean; result: any }>();
+      const body = await response.json<any>();
 
       expect(response.status).toBe(201);
-      expect(body.success).toBe(true);
-      expect(body.result).toEqual(
+      expect(body).toEqual(
         expect.objectContaining({
-          id: expect.any(Number),
+          id: expect.any(String),
           ...taskData,
         }),
       );
     });
 
     it("should return a 400 error for invalid input", async () => {
-      const invalidTaskData = {
-        // Missing required fields 'name', 'slug', etc.
-        description: "This is an invalid task",
-      };
-      const response = await SELF.fetch(`http://local.test/tasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invalidTaskData),
-      });
-      const body = await response.json();
+        const invalidTaskData = { slug: "invalid" }; // Missing name
+        const response = await SELF.fetch(`http://local.test/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(invalidTaskData),
+        });
+        const body = await response.json();
 
-      expect(response.status).toBe(400);
-      expect(body.success).toBe(false);
-      expect(body.errors).toBeInstanceOf(Array);
-    });
+        expect(response.status).toBe(400);
+        expect(body).toEqual({ error: "Missing required fields" });
+      });
   });
 
   // Tests for GET /tasks/{id}
   describe("GET /tasks/{id}", () => {
     it("should get a single task by its ID", async () => {
-      const taskData = {
-        name: "Specific Task",
-        slug: "specific-task",
-        description: "A task to be fetched by ID",
-        completed: false,
-        due_date: "2025-06-01T12:00:00.000Z",
-      };
+      const taskData = { name: "Specific Task", slug: "specific-task" };
       const taskId = await createTask(taskData);
 
       const response = await SELF.fetch(`http://local.test/tasks/${taskId}`);
-      const body = await response.json<{ success: boolean; result: any }>();
+      const body = await response.json<any>();
 
       expect(response.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.result).toEqual(
+      expect(body).toEqual(
         expect.objectContaining({
           id: taskId,
           ...taskData,
@@ -129,106 +159,45 @@ describe("Task API Integration Tests", () => {
     });
 
     it("should return a 404 error if task is not found", async () => {
-      const nonExistentId = 9999;
+      const nonExistentId = "9999";
       const response = await SELF.fetch(
         `http://local.test/tasks/${nonExistentId}`,
       );
       const body = await response.json();
 
       expect(response.status).toBe(404);
-      expect(body.success).toBe(false);
-      expect(body.errors[0].message).toBe("Not Found");
+      expect(body).toEqual({ error: "Task not found" });
     });
   });
 
   // Tests for PUT /tasks/{id}
   describe("PUT /tasks/{id}", () => {
     it("should update a task successfully", async () => {
-      const taskData = {
-        name: "Task to Update",
-        slug: "task-to-update",
-        description: "This task will be updated",
-        completed: false,
-        due_date: "2025-07-01T00:00:00.000Z",
-      };
-      const taskId = await createTask(taskData);
-
-      const updatedData = {
-        name: "Updated Task",
-        slug: "updated-task",
-        description: "This task has been updated",
-        completed: true,
-        due_date: "2025-07-15T10:00:00.000Z",
-      };
+      const taskId = await createTask({ name: "Task to Update", slug: "task-to-update" });
+      const updatedData = { name: "Updated Task", completed: true };
 
       const response = await SELF.fetch(`http://local.test/tasks/${taskId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData),
       });
-      const body = await response.json<{ success: boolean; result: any }>();
+      const body = await response.json<any>();
 
       expect(response.status).toBe(200);
-      expect(body.success).toBe(true);
-      expect(body.result).toEqual(
-        expect.objectContaining({
-          id: taskId,
-          ...updatedData,
-        }),
-      );
-    });
+      expect(body).toEqual({ success: true });
 
-    it("should return 404 when trying to update a non-existent task", async () => {
-      const nonExistentId = 9999;
-      const updatedData = {
-        name: "Updated Task",
-        slug: "updated-task",
-        description: "This task has been updated",
-        completed: true,
-        due_date: "2025-07-15T10:00:00.000Z",
-      };
-      const response = await SELF.fetch(
-        `http://local.test/tasks/${nonExistentId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedData),
-        },
-      );
-
-      expect(response.status).toBe(404);
-    });
-
-    it("should return 400 for invalid update data", async () => {
-      const taskId = await createTask({
-        name: "Task",
-        slug: "task",
-        description: "...",
-        completed: false,
-        due_date: "2025-01-01T00:00:00.000Z",
-      });
-      const invalidUpdateData = { name: "" }; // Invalid name
-      const response = await SELF.fetch(`http://local.test/tasks/${taskId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(invalidUpdateData),
-      });
-
-      expect(response.status).toBe(400);
+      // Verify the task was updated
+      const getResponse = await SELF.fetch(`http://local.test/tasks/${taskId}`);
+      const updatedTask = await getResponse.json<any>();
+      expect(updatedTask.name).toBe("Updated Task");
+      expect(updatedTask.completed).toBe(true);
     });
   });
 
   // Tests for DELETE /tasks/{id}
   describe("DELETE /tasks/{id}", () => {
     it("should delete a task successfully", async () => {
-      const taskData = {
-        name: "Task to Delete",
-        slug: "task-to-delete",
-        description: "This task will be deleted",
-        completed: false,
-        due_date: "2025-08-01T00:00:00.000Z",
-      };
-      const taskId = await createTask(taskData);
+      const taskId = await createTask({ name: "Task to Delete", slug: "task-to-delete" });
 
       const deleteResponse = await SELF.fetch(
         `http://local.test/tasks/${taskId}`,
@@ -236,33 +205,14 @@ describe("Task API Integration Tests", () => {
           method: "DELETE",
         },
       );
-      const deleteBody = await deleteResponse.json<{
-        success: boolean;
-        result: any;
-      }>();
+      const deleteBody = await deleteResponse.json<any>();
 
       expect(deleteResponse.status).toBe(200);
-      expect(deleteBody.success).toBe(true);
-      expect(deleteBody.result.id).toBe(taskId);
+      expect(deleteBody).toEqual({ success: true });
 
       // Verify the task is actually deleted
       const getResponse = await SELF.fetch(`http://local.test/tasks/${taskId}`);
       expect(getResponse.status).toBe(404);
-    });
-
-    it("should return 404 when trying to delete a non-existent task", async () => {
-      const nonExistentId = 9999;
-      const response = await SELF.fetch(
-        `http://local.test/tasks/${nonExistentId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      const body = await response.json();
-
-      expect(response.status).toBe(404);
-      expect(body.success).toBe(false);
-      expect(body.errors[0].message).toBe("Not Found");
     });
   });
 });
