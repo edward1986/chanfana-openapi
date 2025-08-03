@@ -2,7 +2,7 @@ import { OpenAPIRoute, contentJson } from 'chanfana';
 import { z } from 'zod';
 import { AppContext } from '../../types';
 import { uploadToGitHub } from '../../lib/github-upload';
-import { SubmissionModel } from './base';
+import { addDocument } from '../../lib/firestore-rest';
 
 const RegisterParticipantInputSchema = z.object({
   fullName: z.string(),
@@ -46,30 +46,26 @@ export class SubmissionCreate extends OpenAPIRoute {
     const abstractUpload = await uploadToGitHub(body.abstractFileDataUri.split("base64,")[1], body.abstractFileName, registrationId, c.env);
     const paymentUpload = await uploadToGitHub(body.proofOfPaymentDataUri.split("base64,")[1], body.proofOfPaymentFileName, registrationId, c.env);
 
-    // Save to D1
-    const db = c.env.DB;
-    const stmt = db.prepare(
-      `INSERT INTO ${SubmissionModel.tableName} (registration_id, full_name, email, contact_number, institution, research_title, bionote, co_authors, keywords, status, abstract_name, abstract_html_url, abstract_download_url, proof_of_payment_name, proof_of_payment_html_url, proof_of_payment_download_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(
-      registrationId,
-      body.fullName,
-      body.email,
-      body.contactNumber,
-      body.institution,
-      body.researchTitle,
-      body.bionote,
-      body.coAuthors || 'N/A',
-      body.keywords,
-      'Pending Review',
-      body.abstractFileName,
-      abstractUpload.html_url,
-      abstractUpload.download_url,
-      body.proofOfPaymentFileName,
-      paymentUpload.html_url,
-      paymentUpload.download_url
-    );
-
-    await stmt.run();
+    // Save to Firestore
+    await addDocument("submissions", {
+      registration_id: registrationId,
+      full_name: body.fullName,
+      email: body.email,
+      contact_number: body.contactNumber,
+      institution: body.institution,
+      research_title: body.researchTitle,
+      bionote: body.bionote,
+      co_authors: body.coAuthors || "N/A",
+      keywords: body.keywords,
+      status: "Pending Review",
+      submitted_at: new Date().toISOString(),
+      abstract_name: body.abstractFileName,
+      abstract_html_url: abstractUpload.html_url,
+      abstract_download_url: abstractUpload.download_url,
+      proof_of_payment_name: body.proofOfPaymentFileName,
+      proof_of_payment_html_url: paymentUpload.html_url,
+      proof_of_payment_download_url: paymentUpload.download_url,
+    }, c.env);
 
     return {
       registrationId,

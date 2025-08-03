@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const submission = z.object({
-  id: z.number().int(),
+  id: z.string(),
   registration_id: z.string(),
   full_name: z.string(),
   email: z.string().email(),
@@ -22,7 +22,6 @@ export const submission = z.object({
 });
 
 export const SubmissionModel = {
-  tableName: "submissions",
   primaryKeys: ["id"],
   schema: submission,
   serializer: (obj: Record<string, string | number | boolean>) => {

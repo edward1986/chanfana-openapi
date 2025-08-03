@@ -9,7 +9,10 @@
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "paths": {
+      "firebase-admin/*": ["./node_modules/firebase-admin/lib/*"]
+    }
   },
   "include": ["src"]
 }
