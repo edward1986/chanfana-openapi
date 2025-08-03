@@ -57,10 +57,14 @@ export class SubmissionCreate extends OpenAPIRoute {
       bionote: body.bionote,
       coAuthors: body.coAuthors || 'N/A',
       keywords: body.keywords,
-      status: 'Pending Review',
-      submittedAt:  new Date().toISOString(),
-      abstract: { name: body.abstractFileName, ...abstractUpload },
-      proofOfPayment: { name: body.proofOfPaymentFileName, ...paymentUpload },
+      status: "Pending Review",
+      submitted_at: new Date().toISOString(),
+      abstract_name: body.abstractFileName,
+      abstract_html_url: abstractUpload.html_url,
+      abstract_download_url: abstractUpload.download_url,
+      proof_of_payment_name: body.proofOfPaymentFileName,
+      proof_of_payment_html_url: paymentUpload.html_url,
+      proof_of_payment_download_url: paymentUpload.download_url,
     }, c.env);
 
     return {

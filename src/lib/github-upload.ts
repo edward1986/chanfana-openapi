@@ -35,7 +35,7 @@ export async function uploadToGitHub(
 
     if (!response.ok) {
         const errorBody = await response.text();
-        console.error(`GitHub API error: ${response.status} ${response.statusText}`, errorBody);
+        console.error(`GitHub API error: ${response.status} ${response.statusText}`, errorBody, GITHUB_TOKEN);
         throw new Error(`Failed to upload file to GitHub: ${fileName}`);
     }
 
