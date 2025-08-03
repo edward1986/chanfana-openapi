@@ -2,7 +2,8 @@ import { OpenAPIRoute, contentJson } from 'chanfana';
 import { z } from 'zod';
 import { AppContext } from '../../types';
 import { uploadToGitHub } from '../../lib/github-upload';
-import { getDb } from '../../lib/firestore';
+import { SubmissionModel } from './base';
+import {getDb} from "../../lib/firestore";
 
 const RegisterParticipantInputSchema = z.object({
   fullName: z.string(),
@@ -48,20 +49,24 @@ export class SubmissionCreate extends OpenAPIRoute {
 
     // Save to Firestore
     const db = getDb(c.env);
-    await db.add("submissions", {
-      registrationId,
-      fullName: body.fullName,
+    await db.collection("submissions").add({
+      registration_id: registrationId,
+      full_name: body.fullName,
       email: body.email,
-      contactNumber: body.contactNumber,
+      contact_number: body.contactNumber,
       institution: body.institution,
-      researchTitle: body.researchTitle,
+      research_title: body.researchTitle,
       bionote: body.bionote,
-      coAuthors: body.coAuthors || 'N/A',
+      co_authors: body.coAuthors || "N/A",
       keywords: body.keywords,
-      status: 'Pending Review',
-      submittedAt:  new Date().toISOString(),
-      abstract: { name: body.abstractFileName, ...abstractUpload },
-      proofOfPayment: { name: body.proofOfPaymentFileName, ...paymentUpload },
+      status: "Pending Review",
+      submitted_at: new Date().toISOString(),
+      abstract_name: body.abstractFileName,
+      abstract_html_url: abstractUpload.html_url,
+      abstract_download_url: abstractUpload.download_url,
+      proof_of_payment_name: body.proofOfPaymentFileName,
+      proof_of_payment_html_url: paymentUpload.html_url,
+      proof_of_payment_download_url: paymentUpload.download_url,
     });
 
     return {
