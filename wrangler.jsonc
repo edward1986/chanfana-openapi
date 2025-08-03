@@ -6,13 +6,6 @@
   "observability": {
     "enabled": true
   },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "openapi-db",
-      "database_id": "33ad5184-5984-464a-a30d-4d42dfeb1428"
-    }
-    ],
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
     "GITHUB_OWNER":       "pacuitinfo",

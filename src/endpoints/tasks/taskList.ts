@@ -1,12 +1,22 @@
-import { D1ListEndpoint } from "chanfana";
+import { Context } from "hono";
+import { getDb } from "../../lib/firestore";
 import { HandleArgs } from "../../types";
-import { TaskModel } from "./base";
 
-export class TaskList extends D1ListEndpoint<HandleArgs> {
-  _meta = {
-    model: TaskModel,
-  };
+export const TaskList = async (c: Context<HandleArgs>) => {
+  try {
+    const db = getDb(c.env);
+    const querySnapshot = await db.collection("tasks").get();
 
-  searchFields = ["name", "slug", "description"];
-  defaultOrderBy = "id DESC";
-}
+    const tasks: any[] = [];
+    querySnapshot.forEach((doc) => {
+      tasks.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return c.json(tasks);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+};
