@@ -13,32 +13,27 @@ export async function uploadToGitHub(
         'Accept':        'application/vnd.github.v3+json',
     };
 
-    // helper: get the latest SHA, or undefined if the file doesn't exist
+    // Fetch latest SHA (undefined if new)
     async function fetchSha(): Promise<string|undefined> {
         const res = await fetch(url, { method: 'GET', headers });
         if (res.status === 404) return undefined;
         if (!res.ok) throw new Error(`GET error: ${res.status} ${res.statusText}`);
-        const json = await res.json();
-        return json.sha;
+        return (await res.json()).sha;
     }
 
-    const maxRetries = 3;
+    const maxRetries = 2;
     let attempt = 0;
-    let lastErrText = '';
 
     while (attempt < maxRetries) {
         attempt++;
-        // 1) grab fresh SHA
         const sha = await fetchSha();
 
-        // 2) build your payload
         const payload: any = {
             message: `Upload ${fileName} for ${registrationId}`,
             content: fileContent,
-            ...(sha && { sha }),    // only include sha if updating
+            ...(sha && { sha }),
         };
 
-        // 3) attempt the PUT
         const putRes = await fetch(url, {
             method: 'PUT',
             headers,
@@ -46,30 +41,33 @@ export async function uploadToGitHub(
         });
 
         if (putRes.ok) {
-            const { content } = await putRes.json();
+            const content = (await putRes.json()).content;
             return {
                 html_url:     content.html_url,
                 download_url: content.download_url,
             };
         }
 
-        lastErrText = await putRes.text();
+        const errJson = await putRes.json().catch(() => ({}));
+        const msg    = errJson.message || '';
 
-        // on a 409, retry after a short back-off
-        if (putRes.status === 409) {
-            await new Promise(r => setTimeout(r, 300 * attempt));
+        // Retry on stale-SHA (409) or missing-sha (422)
+        if (
+            (putRes.status === 409) ||
+            (putRes.status === 422 && msg.includes(`"sha" wasn't supplied`))
+        ) {
+            // small back-off
+            await new Promise(r => setTimeout(r, 200 * attempt));
             continue;
         }
 
-        // any other error: bail out
+        // any other error: bail
         throw new Error(
-            `Failed to upload ${fileName}: ${putRes.status} ${putRes.statusText}\n${lastErrText}`
+            `GitHub API error ${putRes.status} ${putRes.statusText}\n${msg}`
         );
     }
 
-    // if we exhausted retries
-    console.error(`uploadToGitHub: max retries hit`, lastErrText);
     throw new Error(
-        `Failed to upload ${fileName} after ${maxRetries} attempts due to SHA conflicts.`
+        `Failed to upload ${fileName} after ${maxRetries} attempts due to SHA issues.`
     );
 }
