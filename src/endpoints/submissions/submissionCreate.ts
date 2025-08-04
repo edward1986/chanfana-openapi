@@ -49,6 +49,8 @@ export class SubmissionCreate extends OpenAPIRoute {
 
     // Save to Firestore
     const db = getDb(c.env);
+
+
     await db.collection("submissions").add({
       registration_id: registrationId,
       full_name: body.fullName,
