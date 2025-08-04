@@ -71,4 +71,39 @@ describe("Memberships API Integration Tests", () => {
             expect(db.collection).toHaveBeenCalledWith("individualMemberships");
         });
     });
+
+    describe("POST /memberships/institutional", () => {
+        it("should create a new institutional membership application successfully", async () => {
+            const applicationData = {
+                institutionName: "Test University",
+                contactPerson: "Jane Doe",
+                email: "jane.doe@example.com",
+                contactNumber: "0987654321",
+                letterOfIntentUri: "data:application/pdf;base64,dGVzdA==",
+                letterOfIntentName: "letter.pdf",
+                registrationUri: "data:application/pdf;base64,dGVzdA==",
+                registrationName: "registration.pdf",
+                facultyListUri: "data:application/pdf;base64,dGVzdA==",
+                facultyListName: "faculty.pdf",
+                applicationFormUri: "data:application/pdf;base64,dGVzdA==",
+                applicationFormName: "application.pdf",
+            };
+
+            const response = await SELF.fetch("http://local.test/memberships/institutional", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(applicationData),
+            });
+
+            const body = await response.json<any>();
+
+            expect(response.status).toBe(201);
+            expect(body).toHaveProperty("applicationId");
+            expect(body).toHaveProperty("message", "Application submitted successfully.");
+
+            const { getDb } = await import("../../src/lib/firestore");
+            const db = getDb({} as any);
+            expect(db.collection).toHaveBeenCalledWith("institutionalMemberships");
+        });
+    });
 });
