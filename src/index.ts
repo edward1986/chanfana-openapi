@@ -2,6 +2,7 @@ import { ApiException, fromHono } from "chanfana";
 import { Hono } from "hono";
 import { tasksRouter } from "./endpoints/tasks/router";
 import { submissionsRouter } from "./endpoints/submissions/router";
+import { membershipsRouter } from "./endpoints/memberships/router";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { DummyEndpoint } from "./endpoints/dummyEndpoint";
 import { cors } from "hono/cors";
@@ -57,6 +58,9 @@ app.route("/tasks", tasksRouter);
 
 // Register Submissions Sub router
 openapi.route("/submissions", submissionsRouter);
+
+// Register Memberships Sub router
+openapi.route("/memberships", membershipsRouter);
 
 // Register other endpoints
 openapi.post("/dummy/:slug", DummyEndpoint);
