@@ -1,19 +1,29 @@
+import { OpenAPIRoute, contentJson } from "chanfana";
 import { Context } from "hono";
+import { z } from "zod";
 import { createIssue } from "../../lib/github-issues";
 import { HandleArgs } from "../../types";
 
-export const UserCreate = async (c: Context<HandleArgs>) => {
-  const body = await c.req.json();
+const InputSchema = z.object({
+  email: z.string().email(),
+  username: z.string(),
+});
 
-  // Basic validation
-  if (!body.username || !body.email) {
-    return c.json({ error: "Missing required fields" }, 400);
-  }
+export class UserCreate extends OpenAPIRoute {
+  schema = {
+    request: {
+      body: contentJson(InputSchema),
+    },
+  };
 
-  try {
-    const newUser = await createIssue(c.env, body.username, body, ["user"]);
-    return c.json(newUser, 201);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
+  async handle(c: Context<HandleArgs>) {
+    const { body } = await this.getValidatedData<typeof this.schema>();
+
+    try {
+      const newUser = await createIssue(c.env, body.username, body, ["user"]);
+      return c.json(newUser, 201);
+    } catch (error: any) {
+      return c.json({ error: error.message }, 500);
+    }
   }
-};
+}
