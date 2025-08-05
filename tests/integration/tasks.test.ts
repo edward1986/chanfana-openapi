@@ -5,51 +5,42 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 let tasks: any[] = [];
 let idCounter = 1;
 
-// Mock the firestore library
-vi.mock("../../src/lib/firestore", () => {
-  const mockDb = {
-    add: vi.fn((collection, data) => {
-      const newId = String(idCounter++);
-      const newTask = { id: newId, ...data };
+// Mock the github-issues library
+vi.mock("../../src/lib/github-issues", () => {
+  return {
+    createIssue: vi.fn((env, title, data, labels) => {
+      const newId = idCounter++;
+      const newTask = { id: newId, ...data, labels };
       tasks.push(newTask);
       return Promise.resolve(newTask);
     }),
-    get: vi.fn((collection, id) => {
+    getIssue: vi.fn((env, id) => {
       const task = tasks.find((t) => t.id === id);
       if (task) {
-        return Promise.resolve({ id: task.id, data: () => task });
+        return Promise.resolve(task);
       }
       return Promise.resolve(null);
     }),
-    update: vi.fn((collection, id, data) => {
-        const taskIndex = tasks.findIndex((t) => t.id === id);
-        if (taskIndex > -1) {
-            tasks[taskIndex] = { ...tasks[taskIndex], ...data };
-            return Promise.resolve();
-        }
-        // The real library might throw an error, but for this test, let's assume it does nothing if not found.
-        return Promise.resolve();
+    updateIssue: vi.fn((env, id, data) => {
+      const taskIndex = tasks.findIndex((t) => t.id === id);
+      if (taskIndex > -1) {
+        tasks[taskIndex] = { ...tasks[taskIndex], ...data };
+        return Promise.resolve({ success: true });
+      }
+      return Promise.resolve({ success: false }); // Or throw an error
     }),
-    delete: vi.fn((collection, id) => {
-        const taskIndex = tasks.findIndex((t) => t.id === id);
-        if (taskIndex > -1) {
-            tasks.splice(taskIndex, 1);
-        }
-        return Promise.resolve();
+    closeIssue: vi.fn((env, id) => {
+      const taskIndex = tasks.findIndex((t) => t.id === id);
+      if (taskIndex > -1) {
+        tasks.splice(taskIndex, 1);
+      }
+      return Promise.resolve({ success: true });
     }),
-    collection: vi.fn((collectionName) => ({
-      get: vi.fn(() => {
-        return Promise.resolve({
-            forEach: (callback: (doc: any) => void) => {
-                tasks.forEach(task => callback({ id: task.id, data: () => task }));
-            }
-        });
-      }),
-    })),
-  };
-
-  return {
-    getDb: vi.fn(() => mockDb),
+    listIssues: vi.fn((env, labels) => {
+      // In a real scenario, you'd filter by labels.
+      // For this test, we'll just return all tasks.
+      return Promise.resolve(tasks);
+    }),
   };
 });
 
@@ -120,24 +111,24 @@ describe("Task API Integration Tests", () => {
       expect(response.status).toBe(201);
       expect(body).toEqual(
         expect.objectContaining({
-          id: expect.any(String),
+          id: expect.any(Number),
           ...taskData,
         }),
       );
     });
 
     it("should return a 400 error for invalid input", async () => {
-        const invalidTaskData = { slug: "invalid" }; // Missing name
-        const response = await SELF.fetch(`http://local.test/tasks`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(invalidTaskData),
-        });
-        const body = await response.json();
-
-        expect(response.status).toBe(400);
-        expect(body).toEqual({ error: "Missing required fields" });
+      const invalidTaskData = { slug: "invalid" }; // Missing name
+      const response = await SELF.fetch(`http://local.test/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invalidTaskData),
       });
+      const body = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(body).toEqual({ error: "Missing required fields" });
+    });
   });
 
   // Tests for GET /tasks/{id}
@@ -159,7 +150,7 @@ describe("Task API Integration Tests", () => {
     });
 
     it("should return a 404 error if task is not found", async () => {
-      const nonExistentId = "9999";
+      const nonExistentId = 9999;
       const response = await SELF.fetch(
         `http://local.test/tasks/${nonExistentId}`,
       );

@@ -1,5 +1,5 @@
 import { Context } from "hono";
-import { getDb } from "../../lib/firestore";
+import { createIssue } from "../../lib/github-issues";
 import { HandleArgs } from "../../types";
 
 export const TaskCreate = async (c: Context<HandleArgs>) => {
@@ -11,8 +11,7 @@ export const TaskCreate = async (c: Context<HandleArgs>) => {
   }
 
   try {
-    const db = getDb(c.env);
-    const newTask = await db.add("tasks", body);
+    const newTask = await createIssue(c.env, body.name, body, ["task"]);
     return c.json(newTask, 201);
   } catch (error: any) {
     return c.json({ error: error.message }, 500);

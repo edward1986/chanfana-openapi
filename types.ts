@@ -6,10 +6,9 @@ export type HandleArgs = [AppContext];
 declare global {
     interface Env {
         Bindings: {
-            FIRESTORE_SA_JSON: string;
-            FIRESTORE_PROJECT_ID: string;
-            FIRESTORE_CLIENT_EMAIL: string;
-            FIRESTORE_PRIVATE_KEY: string;
+            GITHUB_TOKEN: string;
+            GITHUB_OWNER: string;
+            GITHUB_REPO: string;
         };
     }
 }
