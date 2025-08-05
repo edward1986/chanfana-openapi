@@ -66,7 +66,7 @@ async function sendEmail(env: any, to: string, subject: string, body: string, at
       console.log(`Email sent successfully to ${to}. Message ID: ${info.messageId}`);
     } catch (error) {
       console.error(`Failed to send email to ${to}:`, error);
-      throw new Error('Failed to send confirmation email.');
+     // throw new Error('Failed to send confirmation email.');
     }
 }
 
