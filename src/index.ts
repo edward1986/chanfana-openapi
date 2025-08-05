@@ -2,6 +2,16 @@ import { ApiException, fromHono } from "chanfana";
 import { Hono } from "hono";
 import { tasksRouter } from "./endpoints/tasks/router";
 import { usersRouter } from "./endpoints/users/router";
+import { TaskList } from "./endpoints/tasks/taskList";
+import { TaskCreate } from "./endpoints/tasks/taskCreate";
+import { TaskRead } from "./endpoints/tasks/taskRead";
+import { TaskUpdate } from "./endpoints/tasks/taskUpdate";
+import { TaskDelete } from "./endpoints/tasks/taskDelete";
+import { UserList } from "./endpoints/users/userList";
+import { UserCreate } from "./endpoints/users/userCreate";
+import { UserRead } from "./endpoints/users/userRead";
+import { UserUpdate } from "./endpoints/users/userUpdate";
+import { UserDelete } from "./endpoints/users/userDelete";
 import { ContentfulStatusCode } from "hono/utils/http-status";
 import { DummyEndpoint } from "./endpoints/dummyEndpoint";
 import { cors } from "hono/cors";
@@ -53,10 +63,18 @@ const openapi = fromHono(app, {
 });
 
 // Register Tasks Sub router
-app.route("/tasks", tasksRouter);
+openapi.get("/tasks", TaskList);
+openapi.post("/tasks", TaskCreate);
+openapi.get("/tasks/:id", TaskRead);
+openapi.put("/tasks/:id", TaskUpdate);
+openapi.delete("/tasks/:id", TaskDelete);
 
 // Register Users Sub router
-app.route("/users", usersRouter);
+openapi.get("/users", UserList);
+openapi.post("/users", UserCreate);
+openapi.get("/users/:id", UserRead);
+openapi.put("/users/:id", UserUpdate);
+openapi.delete("/users/:id", UserDelete);
 
 // Register other endpoints
 openapi.post("/dummy/:slug", DummyEndpoint);
