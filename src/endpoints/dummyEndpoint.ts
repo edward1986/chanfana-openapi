@@ -1,47 +1,26 @@
-import { contentJson, OpenAPIRoute } from "chanfana";
-import { AppContext } from "../types";
+import { OpenAPIRoute, contentJson } from "chanfana";
+import { Context } from "hono";
 import { z } from "zod";
+import { slugSchema } from "../lib/schemas";
+import { HandleArgs } from "../types";
+
+// The dummy endpoint can receive any JSON data, so we use z.any()
+const anySchema = z.any();
 
 export class DummyEndpoint extends OpenAPIRoute {
-  public schema = {
-    tags: ["Dummy"],
-    summary: "this endpoint is an example",
-    operationId: "example-endpoint", // This is optional
+  schema = {
+    params: slugSchema,
     request: {
-      params: z.object({
-        slug: z.string(),
-      }),
-      body: contentJson(
-        z.object({
-          name: z.string(),
-        }),
-      ),
-    },
-    responses: {
-      "200": {
-        description: "Returns the log details",
-        ...contentJson({
-          success: Boolean,
-          result: z.object({
-            msg: z.string(),
-            slug: z.string(),
-            name: z.string(),
-          }),
-        }),
-      },
+      body: contentJson(anySchema),
     },
   };
 
-  public async handle(c: AppContext) {
-    const data = await this.getValidatedData<typeof this.schema>();
+  async handle(c: Context<HandleArgs>) {
+    const { params, body } = await this.getValidatedData<typeof this.schema>();
 
-    return {
-      success: true,
-      result: {
-        msg: "this is a dummy endpoint, serving as example",
-        slug: data.params.slug,
-        name: data.body.name,
-      },
-    };
+    return c.json({
+      "slug": params.slug,
+      "body": body,
+    });
   }
 }

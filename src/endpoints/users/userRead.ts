@@ -1,19 +1,22 @@
+import { OpenAPIRoute } from "chanfana";
 import { Context } from "hono";
 import { getIssue } from "../../lib/github-issues";
+import { paramsSchema } from "../../lib/schemas";
 import { HandleArgs } from "../../types";
 
-export const UserRead = async (c: Context<HandleArgs>) => {
-  const id = c.req.param("id");
+export class UserRead extends OpenAPIRoute {
+  schema = {
+    params: paramsSchema,
+  };
 
-  try {
-    const user = await getIssue(c.env, parseInt(id, 10));
+  async handle(c: Context<HandleArgs>) {
+    const { params } = await this.getValidatedData<typeof this.schema>();
 
-    if (!user) {
-      return c.json({ error: "User not found" }, 404);
+    try {
+      const user = await getIssue(c.env, parseInt(params.id, 10));
+      return c.json(user);
+    } catch (error: any) {
+      return c.json({ error: error.message }, 500);
     }
-
-    return c.json(user);
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500);
   }
-};
+}
