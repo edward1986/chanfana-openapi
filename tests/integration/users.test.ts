@@ -115,17 +115,30 @@ describe("User API Integration Tests", () => {
       );
     });
 
-    it("should return a 400 error for invalid input", async () => {
+    it("should return a 400 error for missing email", async () => {
       const invalidUserData = { username: "invalid" }; // Missing email
       const response = await SELF.fetch(`http://local.test/users`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(invalidUserData),
       });
-      const body = await response.json();
+      const body = await response.json<any>();
 
       expect(response.status).toBe(400);
-      expect(body).toEqual({ error: "Missing required fields" });
+      expect(body.error).toBeDefined();
+    });
+
+    it("should return a 400 error for invalid email", async () => {
+      const invalidUserData = { username: "invalid", email: "invalid-email" };
+      const response = await SELF.fetch(`http://local.test/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(invalidUserData),
+      });
+      const body = await response.json<any>();
+
+      expect(response.status).toBe(400);
+      expect(body.error).toBeDefined();
     });
   });
 

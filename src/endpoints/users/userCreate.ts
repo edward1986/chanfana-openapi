@@ -1,13 +1,14 @@
 import { Context } from "hono";
 import { createIssue } from "../../lib/github-issues";
 import { HandleArgs } from "../../types";
+import { userSchema } from "./schema";
 
 export const UserCreate = async (c: Context<HandleArgs>) => {
   const body = await c.req.json();
+  const validation = userSchema.safeParse(body);
 
-  // Basic validation
-  if (!body.username || !body.email) {
-    return c.json({ error: "Missing required fields" }, 400);
+  if (!validation.success) {
+    return c.json({ error: validation.error.message }, 400);
   }
 
   try {
