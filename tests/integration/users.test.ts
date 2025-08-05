@@ -122,10 +122,12 @@ describe("User API Integration Tests", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(invalidUserData),
       });
-      const body = await response.json();
+      const body = await response.json<any>();
 
       expect(response.status).toBe(400);
-      expect(body).toEqual({ error: "Missing required fields" });
+      expect(body.success).toBe(false);
+      expect(Array.isArray(body.errors)).toBe(true);
+      expect(body.errors[0].path).toContain("email");
     });
   });
 
