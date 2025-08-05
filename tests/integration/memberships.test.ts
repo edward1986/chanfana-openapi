@@ -99,7 +99,7 @@ describe("Memberships API Integration Tests", () => {
 
             expect(response.status).toBe(201);
             expect(body).toHaveProperty("applicationId");
-            expect(body).toHaveProperty("message", "Application submitted successfully.");
+            expect(body).toHaveProperty("message", "Application submitted successfully. A confirmation email has been sent.");
 
             const { getDb } = await import("../../src/lib/firestore");
             const db = getDb({} as any);

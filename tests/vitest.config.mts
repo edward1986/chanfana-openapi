@@ -5,6 +5,7 @@ export default defineWorkersConfig({
     target: "esnext",
   },
   test: {
+    setupFiles: ["./tests/setup.ts"],
     poolOptions: {
       workers: {
         singleWorker: true,
