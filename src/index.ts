@@ -24,7 +24,7 @@ app.onError((err, c) => {
   if (err instanceof ApiException) {
     // If it's a Chanfana ApiException, let Chanfana handle the response
     return c.json(
-      { success: false, errors: err.buildResponse() },
+      { success: false, errors: JSON.stringify(err) },
       err.status as ContentfulStatusCode,
     );
   }
