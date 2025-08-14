@@ -40,7 +40,7 @@ export async function uploadToGitHub(
         });
 
             return {
-                download_url: `https://github.com/pacuitinfo/pacuit/blob/main/${path}` ,
+                download_url: `https://github.com/pacuitinfo/pacuit/raw/refs/heads/main/${path}` ,
             };
         const errJson = await putRes.json().catch(() => ({}));
         console.error(`uploadToGitHub: attempt ${attempt} failed`, errJson);
