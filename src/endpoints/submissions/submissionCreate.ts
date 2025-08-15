@@ -2,8 +2,8 @@ import { OpenAPIRoute, contentJson } from 'chanfana';
 import { z } from 'zod';
 import { AppContext } from '../../types';
 import { uploadToGitHub } from '../../lib/github-upload';
-import { SubmissionModel } from './base';
 import {getDb} from "../../lib/firestore";
+import {sendEmail} from "../memberships/institutionalMembershipCreate";
 
 const RegisterParticipantInputSchema = z.object({
   fullName: z.string(),
@@ -66,6 +66,66 @@ export class SubmissionCreate extends OpenAPIRoute {
       abstract: { name: body.abstractFileName, ...abstractUpload },
       proofOfPayment: { name: body.proofOfPaymentFileName, ...paymentUpload },
     });
+
+
+    const adminEmailSubject = `New PACUIT 2025 Registration: ${body.fullName}`;
+    const adminEmailBody = `
+A new registration has been submitted for PACUIT 2025.
+
+Registration ID: ${registrationId}
+Full Name: ${body.fullName}
+Email: ${body.email}
+Contact Number: ${body.contactNumber}
+Institution: ${body.institution}
+Research Title: ${body.researchTitle}
+Bionote: ${body.bionote}
+Co-authors: ${body.coAuthors || 'N/A'}
+Keywords: ${body.keywords}
+
+Abstract and proof of payment are attached.
+    `;
+
+    // User Confirmation Email
+    const userEmailSubject = `PACUIT 2025 Registration Confirmation - ID: ${registrationId}`;
+    const userEmailBody = `
+Dear ${body.fullName},
+
+Thank you for registering for the 21st National & 6th International PACUIT Conference!
+
+Your registration has been received, and your unique registration ID is ${registrationId}. Please keep this for your records.
+
+Our secretariat will validate your payment and abstract submission within 3-5 working days. You will receive another email once the validation is complete.
+
+Conference Details:
+Theme: "Driving Sustainable and Resilient Industrial Transformation: A Global Industry 5.0 Approach Through Smart Technologies"
+Dates: November 12-14, 2025
+Venue: USTP, Cagayan de Oro City
+
+We look forward to seeing you at the conference!
+
+Sincerely,
+The PACUIT 2025 Organizing Committee
+    `;
+
+    // Send emails (in a real app, you'd use a service like SendGrid, Resend, etc.)
+    await Promise.all([
+      sendEmail(
+          c.env,
+          'pacuit.info@gmail.com',
+          adminEmailSubject,
+          adminEmailBody,
+          [
+            { filename: 'abstract.docx', content: body.abstractFileDataUri },
+            { filename: 'payment.pdf', content: body.proofOfPaymentDataUri },
+          ]
+      ),
+      sendEmail(
+          c.env,
+          body.email,
+          userEmailSubject,
+          userEmailBody
+      )
+    ]);
 
     return {
       registrationId,

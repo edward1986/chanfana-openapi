@@ -27,7 +27,7 @@ const OutputSchema = z.object({
     message: z.string(),
 });
 
-async function sendEmail(env: any, to: string, subject: string, body: string, attachments?: {filename: string, content: string}[]) {
+export async function sendEmail(env: any, to: string, subject: string, body: string, attachments?: {filename: string, content: string}[]) {
     if (!env.EMAIL_USER || !env.EMAIL_PASS) {
         console.log('------- EMAIL_USER or EMAIL_PASS not set in .env file. Simulating email. -------');
         console.log(`To: ${to}`);
